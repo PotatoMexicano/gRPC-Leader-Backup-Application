@@ -38,3 +38,15 @@ Heartbeat solicitado às 16/08/2024 11:22:54: Leader
 ```bash
 Heartbeat solicitado às 16/08/2024 11:23:52: Backup1
 ```
+
+## Melhorias
+
+Ainda não sei como posso corrigir um bug que pode acontecer enquanto mais de 2 cópias estejam online.
+
+Ao subir um lider (1), uma cópia (2), e uma cópia (3) observando a cópia (2).
+
+Caso a cópia (2) desligue, a cópia (3) e o lider (1) irão iniciar o processamento como lider, o que é um comportamento incorreto.
+
+**Solução teórica**: 
+
+Adicionar o IP do lider original, e a cópia (3) só irá atuar caso o lider (1) e a cópia (2) estejam offline.

@@ -19,7 +19,7 @@ public class BackupService
     {
         try
         {
-            using GrpcChannel channel = GrpcChannel.ForAddress($"http://{_leaderIp}:5000");
+            using GrpcChannel channel = GrpcChannel.ForAddress($"http://{_leaderIp}");
             HeartbeatService.HeartbeatServiceClient client = new HeartbeatService.HeartbeatServiceClient(channel);
 
             Console.Write($"Heartbeat solicitado às {DateTime.Now}: ");
@@ -99,20 +99,36 @@ public class Program
         if (isLeader)
         {
             IHost host = CreateHostBuilder(args).Build();
-            Console.WriteLine("Iniciando como líder...");            
+
+            Console.WriteLine("Iniciando como líder...");
             HeartbeatServiceImpl.LeaderState state = new HeartbeatServiceImpl.LeaderState { GuidLeader = "Leader" };
             HeartbeatServiceImpl.StartLeaderWork(state);
             await host.RunAsync();
         }
         else
         {
-            Console.WriteLine("Iniciando como backup...");            
+            IHost host = CreateHostBuilder(args).Build();
+
+            Console.WriteLine("Iniciando como backup...");
+
             HeartbeatServiceImpl.LeaderState state = new HeartbeatServiceImpl.LeaderState { GuidLeader = "Backup1" };
             BackupService backupService = new BackupService(leaderIp)
             {
                 GuidLeader = state.GuidLeader
             };
-            await backupService.MonitorLeader();
+
+            Task monitor = Task.Run(async () =>
+            {
+                await backupService.MonitorLeader();
+            });
+
+            Task server = Task.Run(async () =>
+            {
+                await host.RunAsync();
+            });
+
+            await Task.WhenAll(monitor, server);
+
         }
     }
 
@@ -120,7 +136,7 @@ public class Program
     {
         return Host.CreateDefaultBuilder(args).ConfigureWebHostDefaults(webBuilder =>
     {
-        webBuilder.UseUrls("http://0.0.0.0:5000");
+        webBuilder.UseUrls("http://*:0");
         webBuilder.UseStartup<Startup>();
     });
     }
