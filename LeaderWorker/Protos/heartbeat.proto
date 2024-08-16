@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+option csharp_namespace = "GrpcLeaderBackup";
+
+service HeartbeatService {
+    rpc Check (HeartbeatRequest) returns (HeartbeatResponse);
+}
+
+message HeartbeatRequest {
+    string message = 1;
+}
+
+message HeartbeatResponse {
+    bool isAlive = 1;
+}
