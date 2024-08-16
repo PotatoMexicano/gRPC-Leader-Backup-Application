@@ -32,8 +32,7 @@ public class HeartbeatServiceImpl : HeartbeatService.HeartbeatServiceBase
         Int32[] numbers = GenerateRandomNumbers(20);
         List<Int32> mmcs = numbers.Select(n => CalculateMMC(n, 3)).ToList();
 
-        String guidLeader = leaderState.GuidLeader;
-        Console.WriteLine(guidLeader);
+        Console.WriteLine("Processando...");
     }
 
     private static Int32[] GenerateRandomNumbers(Int32 count)

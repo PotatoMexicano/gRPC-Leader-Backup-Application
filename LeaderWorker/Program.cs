@@ -5,14 +5,38 @@ using LeaderWorker.Services;
 public class BackupService
 {
     private readonly String _leaderIp;
+    private readonly String _copyIp;
     private readonly HttpClient _httpClient;
     private static Boolean _leaderOnline = true;
     public String? GuidLeader;
 
-    public BackupService(String leaderIp)
+    public BackupService(String leaderIp, String? copyIp = default)
     {
         _leaderIp = leaderIp;
+        _copyIp = copyIp ?? String.Empty;
         _httpClient = new HttpClient();
+    }
+
+    public async Task<Boolean> CheckCopy()
+    {
+        if (_copyIp == null)
+        {
+            return true;
+        }
+
+        try
+        {
+            using GrpcChannel channel = GrpcChannel.ForAddress($"http://{_copyIp}");
+            HeartbeatService.HeartbeatServiceClient client = new HeartbeatService.HeartbeatServiceClient(channel);
+            HeartbeatResponse reply = await client.CheckAsync(new HeartbeatRequest { Message = "Ping" });
+            return reply.IsAlive;
+        }
+        catch
+        {
+            return false;
+        }
+
+
     }
 
     public async Task<Boolean> CheckLeader()
@@ -21,13 +45,7 @@ public class BackupService
         {
             using GrpcChannel channel = GrpcChannel.ForAddress($"http://{_leaderIp}");
             HeartbeatService.HeartbeatServiceClient client = new HeartbeatService.HeartbeatServiceClient(channel);
-
-            Console.Write($"Heartbeat solicitado às {DateTime.Now}: ");
-
             HeartbeatResponse reply = await client.CheckAsync(new HeartbeatRequest { Message = "Ping" });
-
-            Console.WriteLine(reply.IsAlive ? "Leader" : "");
-
             return reply.IsAlive;
         }
         catch
@@ -63,8 +81,11 @@ public class BackupService
             try
             {
                 Boolean isLeaderAlive = await CheckLeader();
+                Boolean isCopyAlive = await CheckCopy();
+
                 _leaderOnline = isLeaderAlive;
-                if (!isLeaderAlive)
+
+                if (!isLeaderAlive && !isCopyAlive)
                 {
                     //Console.WriteLine("Líder caiu, assumindo liderança.");
                     AssumeLeadership();
@@ -88,12 +109,15 @@ public class Program
 {
     public static async Task Main(String[] args)
     {
+
         IConfigurationRoot config = new ConfigurationBuilder()
             .AddJsonFile("appsettings.json")
             .Build();
 
         Boolean isLeader = config.GetValue<Boolean>("Leader");
-        String leaderIp = config.GetValue<String>("LeaderIp");
+
+        String? leaderIp = config.GetValue<String>("LeaderIp");
+        String? copyIp = config.GetValue<String>("CopyIp");
 
 
         if (isLeader)
@@ -112,7 +136,7 @@ public class Program
             Console.WriteLine("Iniciando como backup...");
 
             HeartbeatServiceImpl.LeaderState state = new HeartbeatServiceImpl.LeaderState { GuidLeader = "Backup1" };
-            BackupService backupService = new BackupService(leaderIp)
+             BackupService backupService = new BackupService(leaderIp, copyIp)
             {
                 GuidLeader = state.GuidLeader
             };

@@ -39,14 +39,22 @@ Heartbeat solicitado às 16/08/2024 11:22:54: Leader
 Heartbeat solicitado às 16/08/2024 11:23:52: Backup1
 ```
 
-## Melhorias
+## Tabela de verificação em cascata
 
-Ainda não sei como posso corrigir um bug que pode acontecer enquanto mais de 2 cópias estejam online.
+### Exemplo Cópia 4:
 
-Ao subir um lider (1), uma cópia (2), e uma cópia (3) observando a cópia (2).
+A cópia 4 observa a cópia 3 e também a cópia 2.
 
-Caso a cópia (2) desligue, a cópia (3) e o lider (1) irão iniciar o processamento como lider, o que é um comportamento incorreto.
+Ela só irá atuar como Leader quando as duas cópias observadas estejam offline.
 
-**Solução teórica**: 
-
-Adicionar o IP do lider original, e a cópia (3) só irá atuar caso o lider (1) e a cópia (2) estejam offline.
+| # | Nome   | Verificar elemento | Se elemento está offline; Verificar elemento |
+| - | :----: | :----------------: | :------------------------------------------: |
+| 0 | Leader | x | x |
+| 1 | Copy1  | 0 | x |
+| 2 | Copy2  | 1 | 0 |
+| 3 | Copy3  | 2 | 1 |
+| 4 | Copy4  | 3 | 2 |
+| 5 | Copy5  | 4 | 3 |
+| 6 | Copy6  | 5 | 4 |
+| 7 | Copy7  | 6 | 5 |
+| 8 | Copy8  | 7 | 6 |
